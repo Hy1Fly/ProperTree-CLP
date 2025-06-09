@@ -1,7 +1,7 @@
 # 这是什么？
 
 ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.x 和 3.x 版本）和 Tkinter 编写。
-
+由Hy1Fly加入中文,使用AI进行翻译
 ## 功能特性
 
 - [x] 跨平台 - 只要支持 Python 和 Tkinter 的环境均可运行
@@ -28,12 +28,13 @@ ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.
 ### 通过 Git 克隆仓库
 
 #### *nix 系统：
-```bash
+
 git clone https://github.com/corpnewt/ProperTree
 python ./ProperTree/ProperTree.py
 # 或
 python3 ./ProperTree/ProperTree.py
 
+-
 * macOS 用户克隆后双击 ProperTree.command 即可启动。
 
 Windows 系统：
