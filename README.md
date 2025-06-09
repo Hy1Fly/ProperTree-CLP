@@ -22,7 +22,7 @@ ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.
 
 ### 将存储库下载为 ZIP 文件
 
-在任何系统上，您都可以选择绿色的“代码”按钮，然后选择“下载 ZIP”按钮（或单击 [这里]（https://github.com/corpnewt/ProperTree/archive/refs/heads/master.zip））以 zip 文件的形式下载整个存储库（请注意，这不允许您通过“git pull”更新 - 任何更新都需要您以相同的方式再次下载存储库）。
+在任何系统上，您都可以选择绿色的“代码”按钮，然后选择“下载 ZIP”按钮以 zip 文件的形式下载整个存储库（请注意，这不允许您通过“git pull”更新，任何更新都需要您以相同的方式再次下载存储库。
 
 ### 通过 Git 克隆仓库
 
@@ -31,7 +31,9 @@ ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.
 ```
 git clone https://github.com/corpnewt/ProperTree
 python ./ProperTree/ProperTree.py
+```
 -或-
+```
 python3 ./ProperTree/ProperTree.py
 ```
 
@@ -45,11 +47,11 @@ git clone https://github.com/corpnewt/ProperTree
 ```
 
 ***
-常见问题见原项目主页
+FAQ见原项目主页
 
-####截图
+#### 截图
 ![image](https://github.com/user-attachments/assets/d48539f9-304e-4735-b5a7-0a276d596345)
 ![image](https://github.com/user-attachments/assets/2ec08666-3fd6-4e10-ba36-e77828dc9a67)
-目前为测试版
-部分内容还未汉化
-可能会有不知名问题
+![image](https://github.com/user-attachments/assets/e8a65924-f4f4-40cf-8467-15f93635fb38)
+设置等英文字符放于ProperTree.py中
+其它而放于plistwindow.py中
