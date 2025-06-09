@@ -59,27 +59,27 @@ class EntryPlus(ttk.Entry):
 
     def selection_click(self, event, selection_type="click"):
         if not event:
-            # Skip if our event is borked
+            # 如果事件无效则跳过
             return
         try:
-            # Get our current icursor index
+            # 获取当前光标位置
             index = self.index(tk.INSERT)
-            # Try to get the closest gap to our event
+            # 尝试获取最接近事件的光标位置
             closest_gap = self.controller.tk.call("ttk::entry::ClosestGap",self._w,event.x)
-            # Default values for start/end
+            # 默认的起始/结束值
             start = end = index
-            # Let's check for a selection
+            # 检查是否有选中文本
             if self.selection_present():
-                # We're adjusting an existing selection
+                # 调整现有选中区域
                 start = self.index(tk.SEL_FIRST)
                 end   = self.index(tk.SEL_LAST)
             def get_bounds(call,word,index,fallback=0):
                 g = int(self.controller.tk.call(call,word,index))
                 return g if g != -1 else fallback
-            # Figure out which we're updating
+            # 确定要更新的部分
             if index == start:
                 if selection_type == "word":
-                    # Select the whole word
+                    # 选中整个单词
                     closest_gap = get_bounds(
                         "tcl_wordBreakBefore",
                         self.get(),
@@ -88,7 +88,7 @@ class EntryPlus(ttk.Entry):
                 start = closest_gap
             else:
                 if selection_type == "word":
-                    # Select the whole word
+                    # 选中整个单词
                     word = self.get()
                     closest_gap = get_bounds(
                         "tcl_wordBreakAfter",
@@ -97,7 +97,7 @@ class EntryPlus(ttk.Entry):
                         len(word)
                     )
                 end = closest_gap
-            # Set our selection
+            # 设置选中区域
             self.icursor(closest_gap)
             self.selection_range(
                 min(start,end),
@@ -113,8 +113,7 @@ class EntryPlus(ttk.Entry):
 
     def set_icursor(self, position):
         self.icursor(position)
-        # Attempt to show the cursor after setting - should scroll the
-        # widget in most cases.
+        # 设置光标后尝试显示光标 - 在大多数情况下会滚动部件
         try:
             self.controller.tk.call("ttk::entry::See",self._w,position)
         except:
@@ -123,7 +122,7 @@ class EntryPlus(ttk.Entry):
     def select_prior(self, *ignore):
         try:
             if self.index(tk.INSERT) == self.index(tk.SEL_LAST):
-                # Just set the cursor position
+                # 只设置光标位置
                 return self.goto_left_right()
             else:
                 self.selection_range(0,tk.SEL_LAST)
@@ -135,7 +134,7 @@ class EntryPlus(ttk.Entry):
     def select_after(self, *ignore):
         try:
             if self.index(tk.INSERT) == self.index(tk.SEL_FIRST):
-                # Just set the cursor position
+                # 只设置光标位置
                 return self.goto_left_right(left=False)
             else:
                 self.selection_range(tk.SEL_FIRST,tk.END)
@@ -146,30 +145,29 @@ class EntryPlus(ttk.Entry):
 
     def select_left_right(self, amount=-1):
         index = self.index(tk.INSERT)
-        # Check if we have a valid amount, and if we have room
-        # to move - or just bail.
+        # 检查是否有有效的移动量，以及是否有移动空间 - 否则直接返回
         if not isinstance(amount, int) or amount == 0 or \
         (amount < 0 and index == 0) or \
         (amount > 0 and index == self.index(tk.END)):
             return 'break'
-        # Get the baseline values
+        # 获取基准值
         if self.selection_present():
             try:
                 start = self.index(tk.SEL_FIRST)
                 end   = self.index(tk.SEL_LAST)
             except:
-                # Default to the index
+                # 默认为当前索引
                 start = end = index
         else:
             start = end = index
-        # Clamp the index
+        # 限制索引范围
         new_index = min(max(0,index + amount),self.index(tk.END))
-        # Figure out which we're updating
+        # 确定要更新的部分
         if index == start:
             start = new_index
         else:
             end = new_index
-        # Set our selection
+        # 设置选中区域
         self.set_icursor(new_index)
         self.selection_range(
             min(start,end),
@@ -186,7 +184,7 @@ class EntryPlus(ttk.Entry):
     def select_all(self, *ignore):
         self.selection_range(0,tk.END)
         self.set_icursor(tk.END)
-        # returns 'break' to interrupt default key-bindings
+        # 返回'break'以中断默认键绑定
         return 'break'
 
     def goto_start(self, event=None):
@@ -204,14 +202,13 @@ class EntryPlus(ttk.Entry):
             target = self.index(
                 tk.SEL_FIRST if left else tk.SEL_LAST
             )
-            # We have some text selected, clear it
-            # and set the cursor at the left or right
-            # as needed
+            # 有文本被选中，清除它
+            # 并根据需要将光标设置在左侧或右侧
             self.selection_range(0, 0)
             self.set_icursor(target)
         except:
-            # No selection - just move the cursor
-            # to the left or right if possible
+            # 没有选中 - 如果可能的话只移动光标
+            # 到左侧或右侧
             if left:
                 cursor = max(0,self.index(tk.INSERT)-1)
             else:
@@ -232,10 +229,9 @@ class EntryPlus(ttk.Entry):
             get = ""
         if not len(get):
             return 'break'
-        # Use the _clipboard_append method of the controller
-        # if passed, otherwise fall back to the master's
-        # clipboard_append which may not roll over to the
-        # system clipboard
+        # 使用控制器的_clipboard_append方法
+        # 如果未传递，则回退到主控的clipboard_append
+        # 可能不会转移到系统剪贴板
         if hasattr(self.controller,"_clipboard_append"):
             self.controller._clipboard_append(get)
         else:
@@ -254,7 +250,7 @@ class EntryPlus(ttk.Entry):
             except:
                 get = ""
             if len(get):
-                # Have a selection - let's get the first and last
+                # 有选中文本 - 获取首尾位置
                 start = self.index(tk.SEL_FIRST)
                 end   = self.index(tk.SEL_LAST)
                 self.delete(start,end)
@@ -289,148 +285,147 @@ class EntryPopup(EntryPlus):
         self.bind("<Tab>", lambda x:[self.reveal(x),self.next_field(x)])
         self.bind("<FocusOut>", self.focus_out)
 
-        # Lock to avoid prematurely cancelling on focus_out
+        # 锁定以避免在focus_out时过早取消
         self.confirming = False
         self.controller.tk.after(0,self.select_all)
 
     def reveal(self, event=None):
-        # Make sure we're visible if editing
+        # 确保编辑时可见
         self.parent.see(self.cell)
         self.relocate()
 
     def focus_out(self, event=None):
-        if self.confirming: return # Don't do anything if we're still confirming
+        if self.confirming: return # 如果仍在确认中则不执行任何操作
         if self.master.focus_get():
-            # Pass True as the event to allow the bell() when our window still
-            # has focus (means we're actively editing)
+            # 传递True作为事件以允许窗口仍有焦点时发出提示音
+            # (意味着我们正在积极编辑)
             self.confirm(event=True)
         else:
-            # Pass None as the event to prevent the bell()
+            # 传递None作为事件以防止提示音
             self.confirm(no_prompt=True)
 
     def relocate(self, event=None):
-        # Helper called when the window is scrolled to move the popup
+        # 窗口滚动时移动弹出窗口的辅助函数
         bbox = self.parent.bbox(self.cell, column=self.column)
         if bbox:
-            # Move the entry to accommodate the new cell bbox
+            # 移动条目以适应新的单元格边界框
             x,y,width,height = bbox
             pady = height//2
             self.place(x=x,y=y+pady,anchor="w",width=width)
         elif self.winfo_viewable():
-            # Entry left the visible area, and our popup is still visible,
-            # hide it
+            # 条目离开可视区域，而我们的弹出窗口仍可见
+            # 隐藏它
             self.place_forget()
 
     def cancel(self, event=None):
-        # Destroy ourself, then force the parent to focus
+        # 销毁自身，然后强制父级获取焦点
         self.destroy()
         self.master.entry_popup = None
         self.parent.focus_force()
 
     def next_field(self, event=None):
-        # We need to determine if our other field can be edited
-        # and if so - trigger another double click event there
+        # 我们需要确定其他字段是否可编辑
+        # 如果可以 - 在那里触发另一个双击事件
         edit_col = None
         if self.column == "#0":
             check_type = self.master.get_check_type(self.cell).lower()
-            # We are currently in the key column
+            # 当前在键列
             if check_type in ("dictionary","array","boolean"):
-                # Can't edit the other field with these, or they require
-                # a popup menu which is handled via other keybinds - bail
+                # 这些不能编辑其他字段，或者需要
+                # 通过其他键绑定处理的弹出菜单 - 返回
                 return 'break'
             edit_col = "#2"
         elif self.column == "#2":
-            # It's the value column - let's see if we can edit the key
+            # 是值列 - 看看是否可以编辑键
             parent = self.master._tree.parent(self.cell)
             check_type = "dictionary" if not len(parent) else self.master.get_check_type(parent).lower()
             if check_type == "array" or self.cell == self.master.get_root_node():
-                # Can't edit array keys - as they're just indexes
+                # 不能编辑数组键 - 因为它们只是索引
                 return 'break'
             edit_col = "#0"
         if edit_col:
-            # Let's get the bounding box for our other field
+            # 获取其他字段的边界框
             x,y,width,height = self.master._tree.bbox(self.cell, edit_col)
-            # Create an event
+            # 创建事件
             e = tk.Event
             e.x, e.y, e.x_root, e.y_root = x+5, y+5, 0, 0
             self.master.on_double_click(e)
             return 'break'
 
     def confirm_clear_and_focus(self):
-        # Helper to clear confirming, then focus the widget
+        # 辅助函数清除确认状态，然后聚焦部件
         self.confirming = False
         return self.focus_force()
 
     def check_edited(self, value):
-        # Make sure we're Edited if the value is different
+        # 如果值不同则确保标记为已编辑
         if value != self.original_text and not self.master.edited:
             self.master.edited = True
-            self.master.title(self.master.title()+" - Edited")
+            self.master.title(self.master.title()+" - 已编辑")
 
     def confirm(self, event=None, no_prompt = False):
         if not self.winfo_exists():
             return
-        self.confirming = True # Lock confirming
+        self.confirming = True # 锁定确认状态
         if self.column == "#0":
-            # First we make sure that no other siblings
-            # have the same name - as dict names need to be
-            # unique
+            # 首先确保没有其他同级项
+            # 有相同的名称 - 因为字典名称需要是
+            # 唯一的
             parent = self.parent.parent(self.cell)
             text = self.get()
             for child in self.parent.get_children(parent):
                 if child == self.cell:
-                    # Skip ourselves
+                    # 跳过自己
                     continue
-                # Check if our text is equal to any other
-                # keys
+                # 检查文本是否等于任何其他键
                 if text == self.parent.item(child, "text"):
-                    # Have a match, beep and bail
-                    if event: self.bell() # Only bell when we have a real event (i.e. return was pressed)
-                    if no_prompt or not mb.askyesno("Invalid Key Name","That key name already exists in that dict.\n\nWould you like to keep editing?",parent=self.parent):
+                    # 有匹配项，发出提示音并返回
+                    if event: self.bell() # 只有真实事件(即按下回车)时才发出提示音
+                    if no_prompt or not mb.askyesno("无效的键名","该键名已存在于该字典中。\n\n是否继续编辑?",parent=self.parent):
                         return self.cancel(event)
-                    # no_prompt is false and we wanted to continue editing - set focus again and return
+                    # no_prompt为false且我们想继续编辑 - 重新设置焦点并返回
                     return self.confirm_clear_and_focus()
-            # Add to undo stack
+            # 添加到撤销栈
             self.master.add_undo({"type":"edit","cell":self.cell,"text":self.parent.item(self.cell,"text"),"values":self.parent.item(self.cell,"values")})
-            # No matches, should be safe to set
+            # 没有匹配项，可以安全设置
             self.parent.item(self.cell, text=self.get())
-            # Make sure we check if we're edited
+            # 确保检查是否已编辑
             self.check_edited(text)
         else:
-            # Need to walk the values and pad
+            # 需要遍历值并填充
             values = self.parent.item(self.cell)["values"] or []
-            # Count up, padding as we need
+            # 计数并填充
             index = int(self.column.replace("#",""))
             values += [''] * (index - len(values))
 
             original = [x for x in values]
 
-            # Sanitize our value based on type
+            # 根据类型清理我们的值
             type_value = self.master.get_check_type(self.cell).lower()
             value = self.get()
-            # We need to sanitize data and numbers for sure
+            # 我们需要确保日期和数字数据是干净的
             if type_value.lower() == "date" and value.lower() in ("today","now"):
-                # Set it to today first
+                # 首先设置为今天
                 value = datetime.datetime.now().strftime("%b %d, %Y %I:%M:%S %p")
             output = self.master.qualify_value(value,type_value)
             if output[0] == False:
-                # Didn't pass the test - show the error and prompt for edit continuing
-                if event: self.bell() # Only bell when we have a real event (i.e. return was pressed)
-                if no_prompt or not mb.askyesno(output[1],output[2]+"\n\nWould you like to keep editing?",parent=self.parent):
+                # 未通过测试 - 显示错误并提示继续编辑
+                if event: self.bell() # 只有真实事件(即按下回车)时才发出提示音
+                if no_prompt or not mb.askyesno(output[1],output[2]+"\n\n是否继续编辑?",parent=self.parent):
                     return self.cancel(event)
-                # no_prompt is false and we wanted to continue editing - set focus again and return
+                # no_prompt为false且我们想继续编辑 - 重新设置焦点并返回
                 return self.confirm_clear_and_focus()
-            # Set the value to the new output
+            # 将值设置为新输出
             value = output[1]
-            # Add to undo stack
+            # 添加到撤销栈
             self.master.add_undo({"type":"edit","cell":self.cell,"text":self.parent.item(self.cell,"text"),"values":original})
-            # Replace our value (may be slightly modified)
+            # 替换我们的值(可能略有修改)
             values[index-1] = value
-            # Set the values
+            # 设置值
             self.parent.item(self.cell, values=values)
-            # Make sure we check if we're edited
+            # 确保检查是否已编辑
             self.check_edited(value.replace("<","").replace(">","") if type_value.lower() == "data" else value)
-        # Call cancel to close the popup as we're done editing
+        # 调用cancel关闭弹出窗口，完成编辑
         self.cancel(event)
 
 class PlistWindow(tk.Toplevel):
@@ -442,7 +437,7 @@ class PlistWindow(tk.Toplevel):
 """
         self.plist_footer = """
 </plist>"""
-        # Create the window
+        # 创建窗口
         self.root = root
         self.controller = controller
         self.undo_stack = deque()
@@ -458,13 +453,13 @@ class PlistWindow(tk.Toplevel):
         self.last_data = None
         self.last_int  = None
         self.last_bool = None
-        # self.xcode_data = self.controller.xcode_data # keep <data>xxxx</data> in one line when true
-        # self.sort_dict = self.controller.sort_dict # Preserve key ordering in dictionaries when loading/saving
+        # self.xcode_data = self.controller.xcode_data # 当为true时保持<data>xxxx</data>在一行
+        # self.sort_dict = self.controller.sort_dict # 加载/保存时保留字典中的键顺序
         self.menu_code = u"\u21D5"
         #self.drag_code = u"\u2630"
         self.drag_code = u"\u2261"
-        self.safe_path_length = 128 # OC_STORAGE_SAFE_PATH_MAX from Include/Acidanthera/Library/OcStorageLib.h in OpenCorePkg
-        # Get the relative paths to adjust our path max
+        self.safe_path_length = 128 # OpenCorePkg中来自Include/Acidanthera/Library/OcStorageLib.h的OC_STORAGE_SAFE_PATH_MAX
+        # 获取相对路径以调整我们的路径最大长度
         self.acpi_path        = "ACPI\\"
         self.kext_path        = "Kexts\\"
         self.tool_path        = "Tools\\"
@@ -475,25 +470,25 @@ class PlistWindow(tk.Toplevel):
             w = int(self.controller.settings.get("last_window_width",730))
             h = int(self.controller.settings.get("last_window_height",480))
         except:
-            # wut - who be breakin dis?
+            # 出错 - 谁破坏了?
             w = 730
             h = 480
-        # Save the previous states for comparison
+        # 保存之前的状态用于比较
         self.previous_height = h
         self.previous_width = w
         self.minsize(width=730,height=480)
         self.protocol("WM_DELETE_WINDOW", self.close_window)
-        # Let's also center the window
+        # 居中窗口
         x = self.winfo_screenwidth() // 2 - w // 2
         y = self.winfo_screenheight() // 2 - h // 2
         self.geometry("{}x{}+{}+{}".format(w,h, x, y))
-        # Set the title to "Untitled.plist"
-        self.title("Untitled.plist")
-        # Let's track resize events
+        # 设置标题为"Untitled.plist"
+        self.title("未命名.plist")
+        # 跟踪调整大小事件
         self.bind("<Configure>",lambda event,obj=self: self.window_resize(event,obj))
 
-        # Set up the options
-        self.current_plist = None # None = new
+        # 设置选项
+        self.current_plist = None # None = 新建
         self.last_hash = None
         self.edited = False
         self.dragging = False
@@ -502,30 +497,30 @@ class PlistWindow(tk.Toplevel):
         self.key_history = ""
         self.last_key = 0
         self.last_node_result = None
-        self.last_key_threhsold = 1 # Ignore after 1 second
-        self.mod_bitmask = self.get_mod_bitmask() # Get a bit mask for excluded modifier keys
+        self.last_key_threhsold = 1 # 1秒后忽略
+        self.mod_bitmask = self.get_mod_bitmask() # 获取排除修饰键的位掩码
         self.show_find_replace = False
         self.show_type = False
         self.type_menu = tk.Menu(self, tearoff=0)
-        self.type_menu.add_command(label="Dictionary", command=lambda:self.change_type(self.menu_code + " Dictionary"))
-        self.type_menu.add_command(label="Array", command=lambda:self.change_type(self.menu_code + " Array"))
+        self.type_menu.add_command(label="字典", command=lambda:self.change_type(self.menu_code + " Dictionary"))
+        self.type_menu.add_command(label="数组", command=lambda:self.change_type(self.menu_code + " Array"))
         self.type_menu.add_separator()
-        self.type_menu.add_command(label="Boolean", command=lambda:self.change_type(self.menu_code + " Boolean"))
-        self.type_menu.add_command(label="Data", command=lambda:self.change_type(self.menu_code + " Data"))
-        self.type_menu.add_command(label="Date", command=lambda:self.change_type(self.menu_code + " Date"))
-        self.type_menu.add_command(label="Number", command=lambda:self.change_type(self.menu_code + " Number"))
+        self.type_menu.add_command(label="布尔值", command=lambda:self.change_type(self.menu_code + " Boolean"))
+        self.type_menu.add_command(label="数据", command=lambda:self.change_type(self.menu_code + " Data"))
+        self.type_menu.add_command(label="日期", command=lambda:self.change_type(self.menu_code + " Date"))
+        self.type_menu.add_command(label="数字", command=lambda:self.change_type(self.menu_code + " Number"))
         self.type_menu.add_command(label="UID", command=lambda:self.change_type(self.menu_code + " UID"))
-        self.type_menu.add_command(label="String", command=lambda:self.change_type(self.menu_code + " String"))
+        self.type_menu.add_command(label="字符串", command=lambda:self.change_type(self.menu_code + " String"))
 
-        # Set up the Root node type menu - only supports Array and Dict
+        # 设置根节点类型菜单 - 仅支持数组和字典
         self.root_type_menu = tk.Menu(self, tearoff=0)
-        self.root_type_menu.add_command(label="Dictionary", command=lambda:self.change_type(self.menu_code + " Dictionary"))
-        self.root_type_menu.add_command(label="Array", command=lambda:self.change_type(self.menu_code + " Array"))
+        self.root_type_menu.add_command(label="字典", command=lambda:self.change_type(self.menu_code + " Dictionary"))
+        self.root_type_menu.add_command(label="数组", command=lambda:self.change_type(self.menu_code + " Array"))
 
         self.style = ttk.Style()
-        # Treeview theming is horribly broken in Windows for whatever reasons...
+        # Windows中的Treeview主题化莫名其妙地坏了...
         self.style_name = "Corp.TLabel" if os.name=="nt" else "Corp.Treeview"
-        # Attempt to set the color of the headers
+        # 尝试设置标题颜色
         if not "Corp.Treeheading.border" in self.style.element_names():
             self.style.element_create("Corp.Treeheading.border", "from", "default")
         self.style.layout(self.style_name+".Heading", [
@@ -540,57 +535,55 @@ class PlistWindow(tk.Toplevel):
         self.style.configure(self.style_name+".Heading",borderwidth=1,relief="groove")
         self.style.map(self.style_name+".Heading",relief=[('active','raised'),('pressed','sunken')])
 
-        # Fix font height for High-DPI displays
+        # 为高DPI显示器修复字体高度
         self.font = Font(font='TkTextFont')
         self.set_font_size()
         self.set_font_family()
 
-        # If should_set_header_text() returns None, we're running in macOS
-        # with a window that does not support native dark mode.  The result
-        # of which is that some ttk widget backgrounds do not match the
-        # window background.  We'll try to work around that by using tk in
-        # those cases.
+        # 如果should_set_header_text()返回None，我们运行在macOS
+        # 不支持原生暗模式的窗口中。结果是某些ttk部件背景
+        # 不匹配窗口背景。我们尝试通过在这些情况下使用tk来解决。
         tk_or_ttk = tk if self.controller.should_set_header_text() is None else ttk
 
-        # Create the treeview
+        # 创建treeview
         self._tree_frame = tk.Frame(self)
         # self._tree = ttk.Treeview(self._tree_frame, columns=("Type","Value","Drag"), selectmode="browse", style=self.style_name)
-        self._tree = ttk.Treeview(self._tree_frame, columns=("Type","Value"), selectmode="browse", style=self.style_name)
-        self._tree.heading("#0", text="Key")
-        self._tree.heading("#1", text="Type")
-        self._tree.heading("#2", text="Value")
-        self._tree.column("Type",width=int(self._tree.winfo_reqwidth()/4),stretch=False)
+        self._tree = ttk.Treeview(self._tree_frame, columns=("类型","值"), selectmode="browse", style=self.style_name)
+        self._tree.heading("#0", text="键")
+        self._tree.heading("#1", text="类型")
+        self._tree.heading("#2", text="值")
+        self._tree.column("类型",width=int(self._tree.winfo_reqwidth()/4),stretch=False)
         # self._tree.column("Drag",minwidth=40,width=40,stretch=False,anchor="center")
 
-        # Setup the initial colors
+        # 设置初始颜色
         self.r1 = self.r2 = self.hl = self.r1t = self.r2t = self.hlt = None
         self.set_colors()
 
-        # Set the close window and copy/paste bindings
+        # 设置关闭窗口和复制/粘贴绑定
         key = "Command" if str(sys.platform) == "darwin" else "Control"
-        # Add the window bindings
+        # 添加窗口绑定
         self.bind("<{}-w>".format(key), self.close_window)
         self.bind("<{}-f>".format(key), self.hide_show_find)
         self.bind("<{}-p>".format(key), self.hide_show_type)
-        # Add rbits binding
+        # 添加rbits绑定
         self.bind("<{}-i>".format(key), self.show_config_info)
-        # Add the treeview bindings
+        # 添加treeview绑定
         self._tree.bind("<{}-c>".format(key), self.copy_selection)
         self._tree.bind("<{}-Shift-C>".format(key), self.copy_children)
         self._tree.bind("<{}-v>".format(key), self.paste_selection)
 
-        # Create the scrollbar
+        # 创建滚动条
         self.vsb = ttk.Scrollbar(self._tree_frame,orient='vertical',command=self._tree.yview)
         self._tree.configure(yscrollcommand=self.scrollbar_set)
 
-        # Bind right click
+        # 绑定右键点击
         if str(sys.platform) == "darwin":
-            self._tree.bind("<ButtonRelease-2>", self.popup) # ButtonRelease-2 on mac
-            self._tree.bind("<Control-ButtonRelease-1>", self.popup) # Ctrl+Left Click on mac
+            self._tree.bind("<ButtonRelease-2>", self.popup) # macOS上的ButtonRelease-2
+            self._tree.bind("<Control-ButtonRelease-1>", self.popup) # macOS上的Ctrl+左键点击
         else:
             self._tree.bind("<ButtonRelease-3>", self.popup)
 
-        # Set bindings
+        # 设置绑定
         self._tree.bind("<Double-1>", self.on_double_click)
         self._tree.bind('<<TreeviewSelect>>', self.tree_click_event)
         self._tree.bind('<<TreeviewOpen>>', self.pre_alternate)
@@ -611,54 +604,54 @@ class PlistWindow(tk.Toplevel):
         self.bind("<FocusIn>", self.got_focus)
         self._tree.bind("<KeyPress>", self.quick_search)
 
-        # Set type and bool bindings
+        # 设置类型和布尔值绑定
         self._tree.bind("<{}-Up>".format(key), lambda x:self.cycle_type(increment=False))
         self._tree.bind("<{}-Down>".format(key), lambda x:self.cycle_type(increment=True))
         self._tree.bind("<{}-Left>".format(key), self.cycle_bool)
         self._tree.bind("<{}-Right>".format(key), self.cycle_bool)
 
-        # Set up cmd/ctrl+number key binds to change types as needed
+        # 设置cmd/ctrl+数字键绑定以根据需要更改类型
         menu_max = len(self._get_menu_commands(self.type_menu))
         for i in range(menu_max):
             self._tree.bind("<{}-Key-{}>".format(key,i+1), lambda x:self.set_type_by_index(x))
             self._tree.bind("<{}-KP_{}>".format(key,i+1), lambda x:self.set_type_by_index(x))
 
-        # Set expansion bindings
+        # 设置展开绑定
         self._tree.bind("<Shift-Right>", lambda x:self.expand_children())
         self._tree.bind("<Shift-Left>", lambda x:self.collapse_children())
 
         self.recent_menu = None
-        # Setup menu bar (hopefully per-window) - only happens on non-mac systems
+        # 设置菜单栏(希望是每个窗口) - 仅发生在非mac系统
         if not str(sys.platform) == "darwin":
             main_menu = tk.Menu(self)
             file_menu = tk.Menu(self, tearoff=0)
             self.recent_menu = tk.Menu(self, tearoff=0)
-            main_menu.add_cascade(label="File", menu=file_menu)
-            file_menu.add_command(label="New", command=self.controller.new_plist, accelerator="Ctrl+N")
-            file_menu.add_command(label="Open", command=self.controller.open_plist, accelerator="Ctrl+O")
-            file_menu.add_cascade(label="Open Recent", menu=self.recent_menu)
-            file_menu.add_command(label="Save", command=self.controller.save_plist, accelerator="Ctrl+S")
-            file_menu.add_command(label="Save As...", command=self.controller.save_plist_as, accelerator="Ctrl+Shift+S")
-            file_menu.add_command(label="Duplicate", command=self.controller.duplicate_plist, accelerator="Ctrl+D")
-            file_menu.add_command(label="Reload From Disk", command=self.reload_from_disk, accelerator="Ctrl+L")
+            main_menu.add_cascade(label="文件", menu=file_menu)
+            file_menu.add_command(label="新建", command=self.controller.new_plist, accelerator="Ctrl+N")
+            file_menu.add_command(label="打开", command=self.controller.open_plist, accelerator="Ctrl+O")
+            file_menu.add_cascade(label="打开最近", menu=self.recent_menu)
+            file_menu.add_command(label="保存", command=self.controller.save_plist, accelerator="Ctrl+S")
+            file_menu.add_command(label="另存为...", command=self.controller.save_plist_as, accelerator="Ctrl+Shift+S")
+            file_menu.add_command(label="复制", command=self.controller.duplicate_plist, accelerator="Ctrl+D")
+            file_menu.add_command(label="从磁盘重新加载", command=self.reload_from_disk, accelerator="Ctrl+L")
             file_menu.add_separator()
-            file_menu.add_command(label="OC Snapshot", command=self.oc_snapshot, accelerator="Ctrl+R")
-            file_menu.add_command(label="OC Clean Snapshot", command=self.oc_clean_snapshot, accelerator="Ctrl+Shift+R")
+            file_menu.add_command(label="OC快照", command=self.oc_snapshot, accelerator="Ctrl+R")
+            file_menu.add_command(label="OC清理快照", command=self.oc_clean_snapshot, accelerator="Ctrl+Shift+R")
             file_menu.add_separator()
-            file_menu.add_command(label="Convert Window", command=lambda:self.controller.show_window(self.controller.tk), accelerator="Ctrl+T")
-            file_menu.add_command(label="Strip Comments", command=self.strip_comments, accelerator="Ctrl+M")
-            file_menu.add_command(label="Strip Disabled Entries", command=self.strip_disabled, accelerator="Ctrl+E")
-            file_menu.add_command(label="Strip Surrounding Whitespace from Keys & Values", command=lambda:self.strip_whitespace(keys=True,values=True), accelerator="Ctrl+K")
+            file_menu.add_command(label="转换窗口", command=lambda:self.controller.show_window(self.controller.tk), accelerator="Ctrl+T")
+            file_menu.add_command(label="去除注释", command=self.strip_comments, accelerator="Ctrl+M")
+            file_menu.add_command(label="去除禁用条目", command=self.strip_disabled, accelerator="Ctrl+E")
+            file_menu.add_command(label="去除键和值周围的空白", command=lambda:self.strip_whitespace(keys=True,values=True), accelerator="Ctrl+K")
             file_menu.add_separator()
-            file_menu.add_command(label="Settings",command=lambda:self.controller.show_window(self.controller.settings_window), accelerator="Ctrl+,")
+            file_menu.add_command(label="设置",command=lambda:self.controller.show_window(self.controller.settings_window), accelerator="Ctrl+,")
             file_menu.add_separator()
-            file_menu.add_command(label="Toggle Find/Replace Pane",command=self.hide_show_find, accelerator="Ctrl+F")
-            file_menu.add_command(label="Toggle Plist/Data/Int/Bool Type Pane",command=self.hide_show_type, accelerator="Ctrl+P")
+            file_menu.add_command(label="切换查找/替换面板",command=self.hide_show_find, accelerator="Ctrl+F")
+            file_menu.add_command(label="切换Plist/数据/整数/布尔类型面板",command=self.hide_show_type, accelerator="Ctrl+P")
             file_menu.add_separator()
-            file_menu.add_command(label="Quit", command=self.controller.quit, accelerator="Ctrl+Q")
+            file_menu.add_command(label="退出", command=self.controller.quit, accelerator="Ctrl+Q")
             self.config(menu=main_menu)
 
-        # Get the right click menu options
+        # 获取右键菜单选项
         cwd = os.getcwd()
         os.chdir(os.path.abspath(os.path.dirname(os.path.realpath(__file__))))
         self.menu_data = {}
@@ -670,14 +663,14 @@ class PlistWindow(tk.Toplevel):
                 pass
         os.chdir(cwd)
 
-        # Create our type/data view
+        # 创建我们的类型/数据视图
         self.display_frame = tk.Frame(self,height=20)
         for x in (2,4,6,8):
             self.display_frame.columnconfigure(x,weight=1)
-        pt_label = tk.Label(self.display_frame,text="Plist Type:")
-        dt_label = tk.Label(self.display_frame,text="Display Data as:")
-        in_label = tk.Label(self.display_frame,text="Display Ints as:")
-        bl_label = tk.Label(self.display_frame,text="Display Bools as:")
+        pt_label = tk.Label(self.display_frame,text="Plist类型:")
+        dt_label = tk.Label(self.display_frame,text="数据显示为:")
+        in_label = tk.Label(self.display_frame,text="整数显示为:")
+        bl_label = tk.Label(self.display_frame,text="布尔值显示为:")
         self.plist_type_string = tk.StringVar(self.display_frame)
         self.plist_type_menu = tk_or_ttk.OptionMenu(self.display_frame, self.plist_type_string, *self.controller.get_option_menu_list(self.controller.allowed_types), command=self.change_plist_type)
         self.plist_type_string.set(self.controller.allowed_types[0])
@@ -699,14 +692,14 @@ class PlistWindow(tk.Toplevel):
         self.int_type_menu.grid(row=1,column=6,pady=10,padx=5,sticky="we")
         self.bool_type_menu.grid(row=1,column=8,pady=10,padx=5,sticky="we")
         
-        # Create our find/replace view
+        # 创建我们的查找/替换视图
         self.find_frame = tk.Frame(self,height=20)
         self.find_frame.columnconfigure(2,weight=1)
-        f_label = tk.Label(self.find_frame, text="Find:")
+        f_label = tk.Label(self.find_frame, text="查找:")
         f_label.grid(row=0,column=0,sticky="e")
-        r_label = tk.Label(self.find_frame, text="Replace:")
+        r_label = tk.Label(self.find_frame, text="替换:")
         r_label.grid(row=1,column=0,sticky="e")
-        self.f_options = ["Key", "Boolean", "Data", "Date", "Number", "UID", "String"]
+        self.f_options = ["键", "布尔值", "数据", "日期", "数字", "UID", "字符串"]
         self.find_type = self.f_options[0]
         self.f_text = EntryPlus(self.find_frame,self,self.controller)
         self.f_text.delete(0,tk.END)
