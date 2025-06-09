@@ -1,13 +1,12 @@
 ###     ###
-# Imports #
+# 导入 #
 ###     ###
 
 import datetime, os, plistlib, struct, sys, itertools, binascii
 from io import BytesIO
 
 if sys.version_info < (3,0):
-    # Force use of StringIO instead of cStringIO as the latter
-    # has issues with Unicode strings
+    # 强制使用 StringIO 而不是 cStringIO，因为后者在处理 Unicode 字符串时有问题
     from StringIO import StringIO
 else:
     from io import StringIO
@@ -27,7 +26,7 @@ except AttributeError:
     FMT_BINARY = "FMT_BINARY"
 
 ###            ###
-# Helper Methods #
+# 辅助方法 #
 ###            ###
 
 def wrap_data(value):
@@ -49,7 +48,7 @@ def _is_binary(fp):
     return header[:8] == b'bplist00'
 
 ###                             ###
-# Deprecated Functions - Remapped #
+# 已弃用函数 - 重映射 #
 ###                             ###
 
 def readPlist(pathOrFile):
@@ -65,7 +64,7 @@ def writePlist(value, pathOrFile):
         return dump(value, f, fmt=FMT_XML, sort_keys=True, skipkeys=False)
 
 ###                ###
-# Remapped Functions #
+# 重映射函数 #
 ###                ###
 
 def load(fp, fmt=None, use_builtin_types=None, dict_type=dict):
@@ -74,12 +73,12 @@ def load(fp, fmt=None, use_builtin_types=None, dict_type=dict):
         try:
             p = _BinaryPlistParser(use_builtin_types=use_builtin_types, dict_type=dict_type)
         except:
-            # Python 3.9 removed use_builtin_types
+            # Python 3.9 移除了 use_builtin_types
             p = _BinaryPlistParser(dict_type=dict_type)
         return p.parse(fp)
     elif _check_py3():
         use_builtin_types = True if use_builtin_types is None else use_builtin_types
-        # We need to monkey patch this to allow for hex integers - code taken/modified from 
+        # 我们需要修补此函数以支持十六进制整数 - 代码修改自:
         # https://github.com/python/cpython/blob/3.8/Lib/plistlib.py
         if fmt is None:
             header = fp.read(32)
@@ -89,46 +88,43 @@ def load(fp, fmt=None, use_builtin_types=None, dict_type=dict):
                     P = info['parser']
                     break
             else:
-                raise plistlib.InvalidFileException()
+                raise plistlib.InvalidFileException("无效文件")
         else:
             P = plistlib._FORMATS[fmt]['parser']
         try:
             p = P(use_builtin_types=use_builtin_types, dict_type=dict_type)
         except:
-            # Python 3.9 removed use_builtin_types
+            # Python 3.9 移除了 use_builtin_types
             p = P(dict_type=dict_type)
         if isinstance(p,plistlib._PlistParser):
-            # Monkey patch!
+            # 修补函数!
             def end_integer():
                 d = p.get_data()
                 value = int(d,16) if d.lower().startswith("0x") else int(d)
                 if -1 << 63 <= value < 1 << 64:
                     p.add_object(value)
                 else:
-                    raise OverflowError("Integer overflow at line {}".format(p.parser.CurrentLineNumber))
+                    raise OverflowError(f"整数溢出，行号 {p.parser.CurrentLineNumber}")
             def end_data():
                 try:
                     p.add_object(plistlib._decode_base64(p.get_data()))
                 except Exception as e:
-                    raise Exception("Data error at line {}: {}".format(p.parser.CurrentLineNumber,e))
+                    raise Exception(f"数据错误，行号 {p.parser.CurrentLineNumber}: {e}")
             p.end_integer = end_integer
             p.end_data = end_data
         return p.parse(fp)
     else:
-        # Is not binary - assume a string - and try to load
-        # We avoid using readPlistFromString() as that uses
-        # cStringIO and fails when Unicode strings are detected
-        # Don't subclass - keep the parser local
+        # 不是二进制 - 假定为字符串 - 并尝试加载
+        # 避免使用 readPlistFromString() 因为它使用 cStringIO 并在检测到 Unicode 字符串时会失败
+        # 不要子类化 - 保持解析器本地化
         from xml.parsers.expat import ParserCreate
-        # Create a new PlistParser object - then we need to set up
-        # the values and parse.
+        # 创建新的 PlistParser 对象 - 然后需要设置值并解析
         p = plistlib.PlistParser()
         parser = ParserCreate()
         parser.StartElementHandler = p.handleBeginElement
         parser.EndElementHandler = p.handleEndElement
         parser.CharacterDataHandler = p.handleData
-        # We also need to monkey patch this to allow for other dict_types, hex int support
-        # proper line output for data errors, and for unicode string decoding
+        # 还需要修补此函数以支持其他 dict_types、十六进制整数支持、数据错误的正确行输出和 Unicode 字符串解码
         def begin_dict(attrs):
             d = dict_type()
             p.addObject(d)
@@ -139,12 +135,12 @@ def load(fp, fmt=None, use_builtin_types=None, dict_type=dict):
             if -1 << 63 <= value < 1 << 64:
                 p.addObject(value)
             else:
-                raise OverflowError("Integer overflow at line {}".format(parser.CurrentLineNumber))
+                raise OverflowError(f"整数溢出，行号 {parser.CurrentLineNumber}")
         def end_data():
             try:
                 p.addObject(plistlib.Data.fromBase64(p.getData()))
             except Exception as e:
-                raise Exception("Data error at line {}: {}".format(parser.CurrentLineNumber,e))
+                raise Exception(f"数据错误，行号 {parser.CurrentLineNumber}: {e}")
         def end_string():
             d = p.getData()
             if isinstance(d,unicode):
@@ -155,36 +151,35 @@ def load(fp, fmt=None, use_builtin_types=None, dict_type=dict):
         p.end_data = end_data
         p.end_string = end_string
         if isinstance(fp, unicode):
-            # Encode unicode -> string; use utf-8 for safety
+            # 编码 unicode -> string; 为安全使用 utf-8
             fp = fp.encode("utf-8")
         if isinstance(fp, basestring):
-            # It's a string - let's wrap it up
+            # 是字符串 - 包装起来
             fp = StringIO(fp)
-        # Parse it
+        # 解析
         parser.ParseFile(fp)
         return p.root
 
 def loads(value, fmt=None, use_builtin_types=None, dict_type=dict):
     if _check_py3() and isinstance(value, basestring):
-        # If it's a string - encode it
+        # 如果是字符串 - 编码它
         value = value.encode()
     try:
         return load(BytesIO(value),fmt=fmt,use_builtin_types=use_builtin_types,dict_type=dict_type)
     except:
-        # Python 3.9 removed use_builtin_types
+        # Python 3.9 移除了 use_builtin_types
         return load(BytesIO(value),fmt=fmt,dict_type=dict_type)
 
 def dump(value, fp, fmt=FMT_XML, sort_keys=True, skipkeys=False):
     if fmt == FMT_BINARY:
-        # Assume binary at this point
+        # 此时假定为二进制
         writer = _BinaryPlistWriter(fp, sort_keys=sort_keys, skipkeys=skipkeys)
         writer.write(value)
     elif fmt == FMT_XML:
         if _check_py3():
             plistlib.dump(value, fp, fmt=fmt, sort_keys=sort_keys, skipkeys=skipkeys)
         else:
-            # We need to monkey patch a bunch here too in order to avoid auto-sorting
-            # of keys
+            # 还需要修补一堆以避免键自动排序
             writer = plistlib.PlistWriter(fp)
             def writeDict(d):
                 if d:
@@ -194,7 +189,7 @@ def dump(value, fp, fmt=FMT_XML, sort_keys=True, skipkeys=False):
                         if not isinstance(key, basestring):
                             if skipkeys:
                                 continue
-                            raise TypeError("keys must be strings")
+                            raise TypeError("键必须是字符串")
                         writer.simpleElement("key", key)
                         writer.writeValue(value)
                     writer.endElement("dict")
@@ -205,12 +200,11 @@ def dump(value, fp, fmt=FMT_XML, sort_keys=True, skipkeys=False):
             writer.writeValue(value)
             writer.writeln("</plist>")
     else:
-        # Not a proper format
-        raise ValueError("Unsupported format: {}".format(fmt))
+        # 不是正确的格式
+        raise ValueError("不支持的格式: {}".format(fmt))
     
 def dumps(value, fmt=FMT_XML, skipkeys=False, sort_keys=True):
-    # We avoid using writePlistToString() as that uses
-    # cStringIO and fails when Unicode strings are detected
+    # 避免使用 writePlistToString() 因为它使用 cStringIO 并在检测到 Unicode 字符串时会失败
     f = BytesIO() if _check_py3() else StringIO()
     dump(value, f, fmt=fmt, skipkeys=skipkeys, sort_keys=sort_keys)
     value = f.getvalue()
@@ -219,30 +213,26 @@ def dumps(value, fmt=FMT_XML, skipkeys=False, sort_keys=True):
     return value
 
 ###                        ###
-# Binary Plist Stuff For Py2 #
+# Python 2 的二进制 Plist 处理 #
 ###                        ###
 
-# From the python 3 plistlib.py source:  https://github.com/python/cpython/blob/3.11/Lib/plistlib.py
-# Tweaked to function on both Python 2 and 3
+# 来自 python 3 plistlib.py 源码: https://github.com/python/cpython/blob/3.11/Lib/plistlib.py
+# 调整为可在 Python 2 和 3 上运行
 
 class UID:
     def __init__(self, data):
         if not isinstance(data, int):
-            raise TypeError("data must be an int")
-        # It seems Apple only uses 32-bit unsigned ints for UIDs. Although the comment in
-        # CoreFoundation's CFBinaryPList.c detailing the binary plist format theoretically
-        # allows for 64-bit UIDs, most functions in the same file use 32-bit unsigned ints,
-        # with the sole function hinting at 64-bits appearing to be a leftover from copying
-        # and pasting integer handling code internally, and this code has not changed since
-        # it was added. (In addition, code in CFPropertyList.c to handle CF$UID also uses a
-        # 32-bit unsigned int.)
+            raise TypeError("数据必须是整数")
+        # 似乎 Apple 仅对 UID 使用 32 位无符号整数。尽管 CoreFoundation 的 CFBinaryPList.c 中详细说明二进制 plist 格式的注释理论上允许 64 位 UID，
+        # 但同一文件中的大多数函数使用 32 位无符号整数，唯一暗示 64 位的函数似乎是内部复制和粘贴整数处理代码的遗留物，并且此代码自添加以来未更改。
+        # （此外，处理 CF$UID 的 CFPropertyList.c 中的代码也使用 32 位无符号整数。）
         #
         # if data >= 1 << 64:
-        #    raise ValueError("UIDs cannot be >= 2**64")
+        #    raise ValueError("UID 不能 >= 2**64")
         if data >= 1 << 32:
-            raise ValueError("UIDs cannot be >= 2**32 (4294967296)")
+            raise ValueError("UID 不能 >= 2**32 (4294967296)")
         if data < 0:
-            raise ValueError("UIDs must be positive")
+            raise ValueError("UID 必须是正数")
         self.data = data
 
     def __index__(self):
@@ -263,7 +253,7 @@ class UID:
         return hash(self.data)
 
 class InvalidFileException (ValueError):
-    def __init__(self, message="Invalid file"):
+    def __init__(self, message="无效文件"):
         ValueError.__init__(self, message)
 
 _BINARY_FORMAT = {1: 'B', 2: 'H', 4: 'L', 8: 'Q'}
@@ -272,10 +262,9 @@ _undefined = object()
 
 class _BinaryPlistParser:
     """
-    Read or write a binary plist file, following the description of the binary
-    format.  Raise InvalidFileException in case of error, otherwise return the
-    root object.
-    see also: http://opensource.apple.com/source/CF/CF-744.18/CFBinaryPList.c
+    读写二进制 plist 文件，遵循二进制格式描述。
+    出错时引发 InvalidFileException，否则返回根对象。
+    另见: http://opensource.apple.com/source/CF/CF-744.18/CFBinaryPList.c
     """
     def __init__(self, use_builtin_types, dict_type):
         self._use_builtin_types = use_builtin_types
@@ -283,16 +272,16 @@ class _BinaryPlistParser:
 
     def parse(self, fp):
         try:
-            # The basic file format:
-            # HEADER
-            # object...
-            # refid->offset...
-            # TRAILER
+            # 基本文件格式:
+            # 头部
+            # 对象...
+            # refid->偏移量...
+            # 尾部
             self._fp = fp
             self._fp.seek(-32, os.SEEK_END)
             trailer = self._fp.read(32)
             if len(trailer) != 32:
-                raise InvalidFileException()
+                raise InvalidFileException("文件尾部长度无效")
             (
                 offset_size, self._ref_size, num_objects, top_object,
                 offset_table_offset
@@ -304,10 +293,10 @@ class _BinaryPlistParser:
 
         except (OSError, IndexError, struct.error, OverflowError,
                 UnicodeDecodeError):
-            raise InvalidFileException()
+            raise InvalidFileException("解析文件时出错")
 
     def _get_size(self, tokenL):
-        """ return the size of the next object."""
+        """返回下一个对象的大小"""
         if tokenL == 0xF:
             m = self._fp.read(1)[0]
             if not _check_py3():
@@ -325,19 +314,17 @@ class _BinaryPlistParser:
             return struct.unpack('>' + _BINARY_FORMAT[size] * n, data)
         else:
             if not size or len(data) != size * n:
-                raise InvalidFileException()
+                raise InvalidFileException("读取整数时出错")
             return tuple(int(binascii.hexlify(data[i: i + size]),16)
                          for i in range(0, size * n, size))
-            '''return tuple(int.from_bytes(data[i: i + size], 'big')
-                         for i in range(0, size * n, size))'''
 
     def _read_refs(self, n):
         return self._read_ints(n, self._ref_size)
 
     def _read_object(self, ref):
         """
-        read the object by reference.
-        May recursively read sub-objects (content of an array/dict/set)
+        按引用读取对象。
+        可能递归读取子对象（数组/字典/集合的内容）
         """
         result = self._objects[ref]
         if result is not _undefined:
@@ -350,73 +337,69 @@ class _BinaryPlistParser:
             token = ord(token)
         tokenH, tokenL = token & 0xF0, token & 0x0F
 
-        if token == 0x00: # \x00 or 0x00
+        if token == 0x00: # \x00 或 0x00
             result = None
 
-        elif token == 0x08: # \x08 or 0x08
+        elif token == 0x08: # \x08 或 0x08
             result = False
 
-        elif token == 0x09: # \x09 or 0x09
+        elif token == 0x09: # \x09 或 0x09
             result = True
 
-        # The referenced source code also mentions URL (0x0c, 0x0d) and
-        # UUID (0x0e), but neither can be generated using the Cocoa libraries.
+        # 参考的源代码还提到了 URL (0x0c, 0x0d) 和 UUID (0x0e)，但两者都不能使用 Cocoa 库生成。
 
-        elif token == 0x0f: # \x0f or 0x0f
+        elif token == 0x0f: # \x0f 或 0x0f
             result = b''
 
-        elif tokenH == 0x10:  # int
+        elif tokenH == 0x10:  # 整数
             result = int(binascii.hexlify(self._fp.read(1 << tokenL)),16)
-            if tokenL >= 3: # Signed - adjust
+            if tokenL >= 3: # 有符号 - 调整
                 result = result-((result & 0x8000000000000000) << 1)
 
-        elif token == 0x22: # real
+        elif token == 0x22: # 实数
             result = struct.unpack('>f', self._fp.read(4))[0]
 
-        elif token == 0x23: # real
+        elif token == 0x23: # 实数
             result = struct.unpack('>d', self._fp.read(8))[0]
 
-        elif token == 0x33:  # date
+        elif token == 0x33:  # 日期
             f = struct.unpack('>d', self._fp.read(8))[0]
-            # timestamp 0 of binary plists corresponds to 1/1/2001
-            # (year of Mac OS X 10.0), instead of 1/1/1970.
+            # 二进制 plist 的时间戳 0 对应于 2001-1-1 (Mac OS X 10.0 年份)，而不是 1970-1-1。
             result = (datetime.datetime(2001, 1, 1) +
                       datetime.timedelta(seconds=f))
 
-        elif tokenH == 0x40:  # data
+        elif tokenH == 0x40:  # 数据
             s = self._get_size(tokenL)
             if self._use_builtin_types or not hasattr(plistlib, "Data"):
                 result = self._fp.read(s)
             else:
                 result = plistlib.Data(self._fp.read(s))
 
-        elif tokenH == 0x50:  # ascii string
+        elif tokenH == 0x50:  # ASCII 字符串
             s = self._get_size(tokenL)
             result =  self._fp.read(s).decode('ascii')
             result = result
 
-        elif tokenH == 0x60:  # unicode string
+        elif tokenH == 0x60:  # Unicode 字符串
             s = self._get_size(tokenL)
             result = self._fp.read(s * 2).decode('utf-16be')
 
         elif tokenH == 0x80:  # UID
-            # used by Key-Archiver plist files
+            # 被 Key-Archiver plist 文件使用
             result = UID(int(binascii.hexlify(self._fp.read(1 + tokenL)),16))
 
-        elif tokenH == 0xA0:  # array
+        elif tokenH == 0xA0:  # 数组
             s = self._get_size(tokenL)
             obj_refs = self._read_refs(s)
             result = []
             self._objects[ref] = result
             result.extend(self._read_object(x) for x in obj_refs)
 
-        # tokenH == 0xB0 is documented as 'ordset', but is not actually
-        # implemented in the Apple reference code.
+        # tokenH == 0xB0 被记录为 'ordset'，但未在 Apple 参考代码中实际实现。
 
-        # tokenH == 0xC0 is documented as 'set', but sets cannot be used in
-        # plists.
+        # tokenH == 0xC0 被记录为 'set'，但集合不能在 plist 中使用。
 
-        elif tokenH == 0xD0:  # dict
+        elif tokenH == 0xD0:  # 字典
             s = self._get_size(tokenL)
             key_refs = self._read_refs(s)
             obj_refs = self._read_refs(s)
@@ -429,7 +412,7 @@ class _BinaryPlistParser:
                 result[key] = self._read_object(o)
 
         else:
-            raise InvalidFileException()
+            raise InvalidFileException("未知的对象类型标记")
 
         self._objects[ref] = result
         return result
@@ -457,42 +440,40 @@ class _BinaryPlistWriter (object):
 
     def write(self, value):
 
-        # Flattened object list:
+        # 扁平化的对象列表:
         self._objlist = []
 
-        # Mappings from object->objectid
-        # First dict has (type(object), object) as the key,
-        # second dict is used when object is not hashable and
-        # has id(object) as the key.
+        # 对象到对象ID的映射
+        # 第一个字典的键为 (type(object), object)，
+        # 当对象不可哈希时使用第二个字典，键为 id(object)
         self._objtable = {}
         self._objidtable = {}
 
-        # Create list of all objects in the plist
+        # 创建 plist 中所有对象的列表
         self._flatten(value)
 
-        # Size of object references in serialized containers
-        # depends on the number of objects in the plist.
+        # 序列化容器中对象引用的大小取决于 plist 中的对象数量
         num_objects = len(self._objlist)
         self._object_offsets = [0]*num_objects
         self._ref_size = _count_to_size(num_objects)
 
         self._ref_format = _BINARY_FORMAT[self._ref_size]
 
-        # Write file header
+        # 写入文件头
         self._fp.write(b'bplist00')
 
-        # Write object list
+        # 写入对象列表
         for obj in self._objlist:
             self._write_object(obj)
 
-        # Write refnum->object offset table
+        # 写入 refnum->对象偏移量表
         top_object = self._getrefnum(value)
         offset_table_offset = self._fp.tell()
         offset_size = _count_to_size(offset_table_offset)
         offset_format = '>' + _BINARY_FORMAT[offset_size] * num_objects
         self._fp.write(struct.pack(offset_format, *self._object_offsets))
 
-        # Write trailer
+        # 写入尾部
         sort_version = 0
         trailer = (
             sort_version, offset_size, self._ref_size, num_objects,
@@ -501,9 +482,7 @@ class _BinaryPlistWriter (object):
         self._fp.write(struct.pack('>5xBBBQQQ', *trailer))
 
     def _flatten(self, value):
-        # First check if the object is in the object table, not used for
-        # containers to ensure that two subcontainers with the same contents
-        # will be serialized as distinct values.
+        # 首先检查对象是否在对象表中，容器不使用此检查以确保具有相同内容的两个子容器将被序列化为不同的值
         if isinstance(value, _scalars):
             if (type(value), value) in self._objtable:
                 return
@@ -515,7 +494,7 @@ class _BinaryPlistWriter (object):
         elif id(value) in self._objidtable:
             return
 
-        # Add to objectreference map
+        # 添加到对象引用映射
         refnum = len(self._objlist)
         self._objlist.append(value)
         if isinstance(value, _scalars):
@@ -525,7 +504,7 @@ class _BinaryPlistWriter (object):
         else:
             self._objidtable[id(value)] = refnum
 
-        # And finally recurse into containers
+        # 最后递归到容器中
         if isinstance(value, dict):
             keys = []
             values = []
@@ -537,7 +516,7 @@ class _BinaryPlistWriter (object):
                 if not isinstance(k, basestring):
                     if self._skipkeys:
                         continue
-                    raise TypeError("keys must be strings")
+                    raise TypeError("键必须是字符串")
                 keys.append(k)
                 values.append(v)
 
@@ -612,7 +591,7 @@ class _BinaryPlistWriter (object):
 
         elif (_check_py3() and isinstance(value, (bytes, bytearray))) or (hasattr(plistlib, "Data") and isinstance(value, plistlib.Data)):
             if not isinstance(value, (bytes, bytearray)):
-                value = value.data # Unpack it
+                value = value.data # 解包
             self._write_size(0x40, len(value))
             self._fp.write(value)
 
@@ -627,7 +606,7 @@ class _BinaryPlistWriter (object):
 
         elif isinstance(value, UID) or (hasattr(plistlib,"UID") and isinstance(value, plistlib.UID)):
             if value.data < 0:
-                raise ValueError("UIDs must be positive")
+                raise ValueError("UID 必须是正数")
             elif value.data < 1 << 8:
                 self._fp.write(struct.pack('>BB', 0x80, value))
             elif value.data < 1 << 16:
@@ -657,7 +636,7 @@ class _BinaryPlistWriter (object):
                 if not isinstance(k, basestring):
                     if self._skipkeys:
                         continue
-                    raise TypeError("keys must be strings")
+                    raise TypeError("键必须是字符串")
                 keyRefs.append(self._getrefnum(k))
                 valRefs.append(self._getrefnum(v))
 
@@ -667,4 +646,4 @@ class _BinaryPlistWriter (object):
             self._fp.write(struct.pack('>' + self._ref_format * s, *valRefs))
 
         else:
-            raise TypeError(value)
+            raise TypeError(f"不支持的类型: {type(value)}")
