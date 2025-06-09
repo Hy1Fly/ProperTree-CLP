@@ -1,121 +1,115 @@
-# What is it?
+# 这是什么？
 
-ProperTree is a cross-platform GUI plist editor written using Python *(compatible with both 2.x and 3.x)* and Tkinter.
+ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.x 和 3.x 版本）和 Tkinter 编写。
 
-## Features
+## 功能特性
 
-- [x] Cross-platform - should work anywhere python and tkinter do
-- [x] Document-based to support multiple windows
-- [x] Node drag and drop to reorder
-- [x] Copy and paste
-- [x] Find/Replace - allows searching keys or values
-- [x] Ordered - or unordered - dictionary support
-- [x] Full undo-redo stack
-- [x] Backported support for binary property lists and unicode in python 2
-- [x] Expanded integer casting to allow for hex integers (eg. `0xFFFF`) in xml `<integer>` tags
-- [x] Context-aware right-click menu that includes template info to OpenCore or Clover config.plist files
-- [x] OC (Clean) Snapshot to walk the contents of ACPI, Drivers, Kexts, and Tools for OpenCore config.plist files
-- [x] Value converter that supports Base64, Hex, Ascii, and Decimal
+- [x] 跨平台 - 只要支持 Python 和 Tkinter 的环境均可运行
+- [x] 支持多窗口的文档式编辑
+- [x] 通过拖放节点重新排序
+- [x] 复制粘贴功能
+- [x] 查找/替换 - 支持搜索键名或键值
+- [x] 有序/无序字典支持
+- [x] 完整的撤销-重做栈
+- [x] 在 Python 2 中提供二进制属性列表和 Unicode 的后向兼容支持
+- [x] 扩展整数转换功能，支持在 XML `<integer>` 标签中使用十六进制整数（如 `0xFFFF`）
+- [x] 上下文感知右键菜单，包含针对 OpenCore 或 Clover 配置文件 config.plist 的模板信息
+- [x] OC (纯净)快照 - 扫描 OpenCore 配置文件中 ACPI、Drivers、Kexts 和 Tools 目录的内容
+- [x] 支持 Base64、十六进制、ASCII 和十进制的数值转换器
 
 ***
 
-## Getting ProperTree
+## 获取 ProperTree
 
-### Downloading The Repo As A ZIP File
+### 下载 ZIP 压缩包
 
-On any system you can choose the green `Code` button, followed by the `Download ZIP` button (or click [here](https://github.com/corpnewt/ProperTree/archive/refs/heads/master.zip)) to download the entire repo as a zip file (note, this does not allow you to update via `git pull` - any updates would require you to download the repo again in the same fashion).
+在任何系统上，点击绿色的 `Code` 按钮，选择 `Download ZIP`（或直接点击[此处](https://github.com/corpnewt/ProperTree/archive/refs/heads/master.zip)）下载整个仓库。注意：此方式无法通过 `git pull` 更新，更新需重新下载。
 
-### Cloning The Repo Via Git
+### 通过 Git 克隆仓库
 
-#### On *nix systems:
-
-```
+#### *nix 系统：
+```bash
 git clone https://github.com/corpnewt/ProperTree
 python ./ProperTree/ProperTree.py
-- or -
+# 或
 python3 ./ProperTree/ProperTree.py
-```
 
-\* On macOS, you can simply double-click the `ProperTree.command` after cloning to launch.
+* macOS 用户克隆后双击 ProperTree.command 即可启动。
 
-#### On Windows:
-
-```
+Windows 系统：
+batch
 git clone https://github.com/corpnewt/ProperTree
 ./ProperTree/ProperTree.bat
-```
+常见问题解答
+OC 快照功能是什么？
+该功能会提示您选择 OpenCore (OC) 文件夹，扫描其 ACPI、Kexts、Tools 和 Drivers 目录内容，并与当前配置文件的 ACPI -> Add, Kernel -> Add, Misc -> Tools, UEFI -> Drivers 进行对比。自动增删条目，并通过比对 kext 的 CFBundleIdentifier 和 OSBundleLibraries 确保依赖加载顺序。会检测重复的 CFBundleIdentifiers（支持 MinKernel/MaxKernel/MatchKernel 重叠检查），并提供禁用选项。同时检查"已禁用父 kext 但启用子 kext"的情况。默认通过比对 OpenCore.efi 的 MD5 哈希确定架构版本，未匹配则使用脚本中 snapshot.plist 的最新架构。可在设置菜单的 OC Snapshot Target Version 自定义。
 
-***
+OC 快照和 OC 纯净快照有何区别？
+两者功能相同，但起点不同：
 
-## FAQ
+纯净快照会清空配置中的四个相关模块，然后重新添加所有内容
 
-* **What does OC Snapshot do?**
+普通快照基于当前配置内容增量更新，仅增删必要条目
 
-  The OC Snapshot function will prompt you to select an OC folder, then walk the contents of the ACPI, Kexts, Tools, and Drivers directories within that folder - comparing all entries to the current document's `ACPI -> Add`, `Kernel -> Add`, `Misc -> Tools`, and `UEFI -> Drivers` respectively.  It will add or remove entries as needed, and also ensures kext load order by comparing each kext's `CFBundleIdentifier` to all other kexts' `OSBundleLibraries` within their Info.plist - making sure that any kext that is relied on by others is loaded before them.  It will also warn if it detects duplicate `CFBundleIdentifiers` (with support for `MinKernel`, `MaxKernel`, and `MatchKernel` overlap checks), and offer to disable all after the first found.  It checks for disabled parent kexts with enabled child kexts as well.  The schema used is (by default) determined by comparing the MD5 hash of the `OpenCore.efi` file to a known list of Acidanthera debug/release versions.  If the MD5 hash does not match any known version, it will fall back to the newest schema in the script's `snapshot.plist`.  This behavior can be customized in the Settings per the `OC Snapshot Target Version` menu.
+何时使用纯净快照？
+首次快照建议使用纯净快照清除示例条目，后续更新使用普通快照以保留自定义设置。
 
-* **What is the difference between OC Snapshot and OC Clean Snapshot?**
+Sonoma (14.x+) 系统点击无响应
+Python 3.11.x 及更早版本在 macOS 上与 tk 存在兼容性问题。升级至 Python 3.12.0+（下载）可修复。如无法升级，可尝试拖动窗口后再点击树形视图。
 
-  Both snapshot variants accomplish the same tasks - they just leverage different starting points.  An OC **Clean** Snapshot will first clear out `ACPI -> Add`, `Kernel -> Add`, `Misc -> Tools`, and `UEFI -> Drivers`, then add everything from within the respective ACPI, Kexts, Tools, and Drivers directory anew.  A regular OC Snapshot starts with the information within the current document for those four locations, and only pulls changes - adding and removing entries as needed.
-  
-* **When should I use an OC Clean Snapshot vs an OC Snapshot?**
+macOS Monterey (12.x+) 显示黑窗
+系统自带的 tk 版本不兼容。解决方案：
 
-  Typically, an OC **Clean** Snapshot should only be used the first time you snapshot to ensure any sample entries in the config.plist are removed and added anew.  Every subsequent snapshot should be a regular OC Snapshot to ensure any customizations you've made are preserved.
+从 python.org 安装最新 Python
 
-* **Can't click anything on Sonoma (14.x) and Newer**
+运行 ProperTree/Scripts 中的 buildapp-select.command
 
-  This appears to manifest when using python 3.11.x and older due to some isssue with tk and macOS.  Updating to at least python 3.12.0 (found [here](https://www.python.org/downloads/macos/)) appears to fix it.  If you are unable to update your python version, you can also move the window around before trying to click the elements in the treeview.
+使用生成的 ProperTree.app 启动
 
-* **ProperTree opens a black window on macOS Monterey (12.x) and Newer**
+macOS Monterey 无法读写 plist 文件
+tk 内置版本问题。需安装 Python 3.10.2+ 的通用版本（下载），再通过 buildapp-select.command 创建应用。
 
-  It appears the default tk implementation that ships with macOS Monterey (and the version installed with the Command Line Tools) doesn't display correctly.  A workaround is to download and install the latest build of python from python.org (found [here](https://www.python.org/downloads/macos/)) which has a compatible tk bundled, then use the `buildapp-select.command` located in ProperTree's `Scripts` directory to build an application bundle targeting the installed python's path.  You can then leverage the `ProperTree.app` bundle it creates.
-  
-* **ProperTree cannot open or save plist files on macOS Monterey (12.x)**
+关联 .plist 文件双击打开
 
-  This appears to be an issue with the built-in tk, and the earlier "universal" installers from python.org.  With at least python 3.10.2, this issue has been resolved in the universal builds.  You can get the latest python 3 installer [here](https://www.python.org/downloads/macos/).  After installing, use the `buildapp-select.command` located in ProperTree's `Scripts` directory to build an application bundle targeting the installed python's path.  You can then leverage the `ProperTree.app` bundle it creates.
+macOS：运行 Scripts/buildapp-select.command 生成应用后关联
 
-* **How can I have ProperTree open when I double-click a .plist file?**
+Windows：运行 Scripts/AssociatePlistFiles.bat 关联（移动目录需重新运行）
 
-  On macOS you can run `buildapp-select.command` located in ProperTree's `Scripts` directory to build an application bundle which can be associated with .plist files.
-  
-  On Windows, you can run `AssociatePlistFiles.bat` located in ProperTree's `Scripts` directory to associate .plist files with `ProperTree.bat`, and also to add an `Open with ProperTree` option to the contextual menu when right-clicking .plist files.  This approach is location-dependent, and moving your copy of ProperTree will require you re-run `AssociatePlistFiles.bat`.
+报错 ModuleNotFoundError: No module name 'tkinter'
+缺少图形库依赖。Ubuntu 系统修复命令：
 
-* **When I try to run ProperTree, I get `[ModuleNotFoundError: No module name 'tkinter']`**
+bash
+sudo apt-get install python3-tk -y
+权限不足无法运行
+确保来源可信后授予权限：
 
-  That is because the graphical interface library that ProperTree depends on isn't present or cannot be detected, you need to install `tkinter` from your package manager. 
+bash
+chmod +x ProperTree.command
+非美式键盘布局导致崩溃
+macOS 的 Tcl/Tk Cocoa 实现存在缺陷（详情）。解决方案：
 
-  To install it on Ubuntu (and Ubuntu-based distros), you can run `sudo apt-get install python3-tk -y`
+安装 Python 2.7.18+（下载）
 
-* **ProperTree doesn't run because it doesn't have permissions, what gives?**
+使用 buildapp-select.command 绑定该 Python 路径
 
-  This shouldn't happen and it is recommended that you download only from the official ProperTree repository, but if you are confident about your source, then running `chmod +x ProperTree.command` should sort it out
+macOS Big Sur (11.x) 崩溃问题
+* macOS 11.2+ 已修复系统 tk 问题
+旧版解决方案：
 
-* **I use an international keyboard layout on macOS and some keys crash ProperTree with `NSRangeException', reason: '-[__NSCFConstantString characterAtIndex:]: Range or index out of bounds`**
+安装 python.org 的 Python 3.9.1+（避免使用"通用"安装包）
 
-  This is a bug in the Cocoa implementation of Tcl/Tk on macOS (discussed [here](https://bugs.python.org/issue22566)).  The latest python 2 installer from [python.org](https://www.python.org/downloads/release/python-2718/) ships with, and uses Tcl/Tk 8.6.8 which has this issue fixed.  Given that the shebang in `ProperTree.command` leverages `#!/usr/bin/env python` - the first python 2 binary found should be used. `buildapp-select.command` from ProperTree's `Scripts` directory can be used to hardcode a specific python install's path into the .app bundle's executable shebang.
-  
-* **ProperTree crashes on Big Sur (macOS 11)**
+通过 buildapp-select.command 创建应用
 
-  __As of macOS 11.2 (20D5029f), the system's `tk` installation appears to be fixed, and works correctly.  As such, it should not require an external python version to function.__
+buildapp-select.command 使用示例
+该脚本自动检测可用 Python 版本（示例输出）：
 
-  This is due to the default python installs on macOS leveraging an older `tk` version - which lacks support for macOS 11.  To solve this, you can download and install the latest python 3 version from https://www.python.org/downloads/mac-osx/ (note: Currently the "universal" 3.9.1 installer causes theme issues and should not be used) then leverage the `buildapp-select.command` from ProperTree's `Scripts` directory to build a .app bundle that will leverage that python version.
-  
-  If you already have python 3 installed via `brew` or another package manager - it is likely still linking to the system `tk` version, which will still have issues unless linked against a newer version. 
-
-* **`buildapp-select.command` Usage**
-
-  An example of the output of `buildapp-select.command` is shown below.  It will walk the output of `which python` and `which python3`, then attempt to load the `tk` interface while keeping track of which work and which fail.  The example below is from macOS 11.2 (20D4029f) with the system versions of python 2 and 3, as well as python 3.9.1 installed from python.org.  If there's an existing `ProperTree.app` in the directory above the `Scripts` folder, the shebang of that app will be located and served up as the `C. Current` option.  At the following menu, I would select option `3` or `C` to use the non-system python install.
-
-```
- - Currently Available Python Versions -
-
-1. /usr/bin/python 2.7.16 - tk 8.5 (8.6+ recommended)
-2. /usr/bin/python3 3.8.2 - tk 8.5 (8.6+ recommended)
-3. /Library/Frameworks/Python.framework/Versions/3.9/bin/python3 3.9.1 - tk 8.6
+text
+- 当前可用 Python 版本 -
+1. /usr/bin/python 2.7.16 - tk 8.5 (推荐8.6+)
+2. /usr/bin/python3 3.8.2 - tk 8.5 (推荐8.6+)
+3. /Library/Frameworks/.../python3 3.9.1 - tk 8.6
 4. /usr/bin/env python
 5. /usr/bin/env python3
-
-C. Current (/Library/Frameworks/Python.framework/Versions/3.9/bin/python3)
-Q. Quit
-
-Please select the python version to use:  
-```
+C. 当前版本 (/Library/Frameworks/.../python3)
+Q. 退出
+请选择要使用的 Python 版本：
