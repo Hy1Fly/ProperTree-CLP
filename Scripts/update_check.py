@@ -1,7 +1,7 @@
 import downloader
 import json, os, sys, argparse, tempfile, shutil
 
-DEFAULT_URL = "https://raw.githubusercontent.com/corpnewt/ProperTree/master/Scripts/version.json"
+DEFAULT_URL = "https://raw.githubusercontent.com/Hy1Fly/ProperTree/master/Scripts/version.json"
 DEFAULT_TEX_URL = "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Docs/Configuration.tex"
 DL = None
 try: DL = downloader.Downloader()
