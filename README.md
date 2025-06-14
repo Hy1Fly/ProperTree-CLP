@@ -26,10 +26,10 @@ ProperTree 是一款跨平台的 GUI plist 编辑器，使用 Python（兼容 2.
 
 ### 通过 Git 克隆仓库
 
-#### 在 *nix 系统上：
+#### 在 *linux 系统上：
 
 ```
-git clone https://github.com/corpnewt/ProperTree
+git clone https://github.com/Hy1Fly/ProperTree-CLP
 python ./ProperTree/ProperTree.py
 ```
 -或-
@@ -42,7 +42,7 @@ python3 ./ProperTree/ProperTree.py
 #### 在 Windows 上：
 
 ```
-git clone https://github.com/corpnewt/ProperTree
+git clone https://github.com/Hy1Fly/ProperTree-CLP
 ./ProperTree/ProperTree.bat
 ```
 
