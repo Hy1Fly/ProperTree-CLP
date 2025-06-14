@@ -3715,21 +3715,21 @@ class PlistWindow(tk.Toplevel):
         # Build right click menu
         popup_menu = tk.Menu(self, tearoff=0)
         if self.get_check_type(cell).lower() in ("array","dictionary"):
-            popup_menu.add_command(label="Expand Node", command=self.expand_node)
-            popup_menu.add_command(label="Collapse Node", command=self.collapse_node)
+            popup_menu.add_command(label="展开节点", command=self.expand_node)
+            popup_menu.add_command(label="关闭节点", command=self.collapse_node)
             popup_menu.add_separator()
-            popup_menu.add_command(label="Expand Children", command=self.expand_children)
-            popup_menu.add_command(label="Collapse Children", command=self.collapse_children)
+            popup_menu.add_command(label="展开 小节点", command=self.expand_children)
+            popup_menu.add_command(label="关闭 小节点", command=self.collapse_children)
             popup_menu.add_separator()
-        popup_menu.add_command(label="Expand All", command=self.expand_all)
-        popup_menu.add_command(label="Collapse All", command=self.collapse_all)
+        popup_menu.add_command(label="展开全部", command=self.expand_all)
+        popup_menu.add_command(label="关闭全部", command=self.collapse_all)
         popup_menu.add_separator()
         is_mac = sys.platform == "darwin"
         # Determine if we are adding a child or a sibling
         if cell in ("",self.get_root_node()):
             # Top level - get the Root
             if self.get_check_type(self.get_root_node()).lower() in ("array","dictionary"):
-                popup_menu.add_command(label="New top level entry{}".format(" (Cmd +)" if is_mac else ""), command=lambda:self.new_row(self.get_root_node()),accelerator=None if is_mac else "(Ctrl +)")
+                popup_menu.add_command(label="新的顶级条目{}".format(" (Cmd +)" if is_mac else ""), command=lambda:self.new_row(self.get_root_node()),accelerator=None if is_mac else "(Ctrl +)")
         else:
             if self.get_check_type(cell).lower() in ("dictionary","array") and (self._tree.item(cell,"open") or not len(self._tree.get_children(cell))):
                 popup_menu.add_command(label="New child under '{}'{}".format(self._tree.item(cell,"text")," (Cmd +)" if is_mac else ""), command=lambda:self.new_row(cell),accelerator=None if is_mac else "(Ctrl +)")
@@ -3745,22 +3745,22 @@ class PlistWindow(tk.Toplevel):
             popup_menu.add_separator()
             # Find out if we can recursively start with the cell, or if we need to start with the parent
             recurs_target = cell if self.get_check_type(cell).lower() in ("dictionary","array") and len(self._tree.get_children(cell)) else parent
-            popup_menu.add_command(label="Recursively sort keys starting at '{}'".format(self._tree.item(recurs_target,"text")), command=lambda:self.sort_keys(recurs_target,recursive=True))
-            popup_menu.add_command(label="Recursively reverse sort keys starting at '{}'".format(self._tree.item(recurs_target,"text")), command=lambda:self.sort_keys(recurs_target,recursive=True,reverse=True))
+            popup_menu.add_command(label="从以下位置开始递归排序密钥 '{}'".format(self._tree.item(recurs_target,"text")), command=lambda:self.sort_keys(recurs_target,recursive=True))
+            popup_menu.add_command(label="从以下位置开始递归反向排序键 '{}'".format(self._tree.item(recurs_target,"text")), command=lambda:self.sort_keys(recurs_target,recursive=True,reverse=True))
             # Check the actual cell
             sort_target = cell if cell in ("",self.get_root_node()) or (self.get_check_type(cell).lower() == "dictionary" and len(self._tree.get_children(cell))>1) else self._tree.parent(cell)
-            popup_menu.add_command(label="Sort keys in '{}'".format(self._tree.item(sort_target,"text")), command=lambda:self.sort_keys(sort_target))
-            popup_menu.add_command(label="Reverse sort keys in '{}'".format(self._tree.item(sort_target,"text")), command=lambda:self.sort_keys(sort_target,reverse=True))
+            popup_menu.add_command(label="对密钥进行排序 '{}'".format(self._tree.item(sort_target,"text")), command=lambda:self.sort_keys(sort_target))
+            popup_menu.add_command(label="反向排序键 '{}'".format(self._tree.item(sort_target,"text")), command=lambda:self.sort_keys(sort_target,reverse=True))
             
         # Add the copy and paste options
         popup_menu.add_separator()
         c_state = "normal" if len(self._tree.selection()) else "disabled"
         try: p_state = "normal" if len(self.root.clipboard_get()) else "disabled"
         except: p_state = "disabled" # Invalid clipboard content
-        popup_menu.add_command(label="Copy{}".format(" (Cmd+C)" if is_mac else ""),command=self.copy_selection,state=c_state,accelerator=None if is_mac else "(Ctrl+C)")
+        popup_menu.add_command(label="复制{}".format(" (Cmd+C)" if is_mac else ""),command=self.copy_selection,state=c_state,accelerator=None if is_mac else "(Ctrl+C)")
         if not cell in ("",self.get_root_node()) and self.get_check_type(cell).lower() in ("array","dictionary"):
             popup_menu.add_command(label="Copy Children{}".format(" (Cmd+Shift+C)" if is_mac else ""), command=self.copy_children,state=c_state,accelerator=None if is_mac else "(Ctrl+Shift+C)")
-        popup_menu.add_command(label="Paste{}".format(" (Cmd+V)" if is_mac else ""),command=self.paste_selection,state=p_state,accelerator=None if is_mac else "(Ctrl+V)")
+        popup_menu.add_command(label="粘贴{}".format(" (Cmd+V)" if is_mac else ""),command=self.paste_selection,state=p_state,accelerator=None if is_mac else "(Ctrl+V)")
         cell_path = self.get_cell_path(cell)
         # Add rbits option
         cell_search = [x for x in self.split(cell_path) if x and x!="*"]
